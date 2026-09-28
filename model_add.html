@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>添加模型 - Test_Prompt</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">T</div>
+      <div class="name">Test_Prompt</div>
+    </div>
+    <nav class="menu">
+      <div class="menu-item menu-l1 open">
+        <div class="menu-link">基础信息 <span class="arrow">▶</span></div>
+        <div class="menu-item menu-l2 open">
+          <div class="menu-link">模型服务器</div>
+          <div class="menu-l3">
+            <a href="list_server.html">服务器列表</a>
+            <a href="server.html">添加服务器</a>
+          </div>
+        </div>
+        <div class="menu-item menu-l2 open">
+          <div class="menu-link">模型</div>
+          <div class="menu-l3">
+            <a href="mode_list.html">模型列表</a>
+            <a href="model_add.html" class="active">添加模型</a>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item menu-l1">
+        <a class="menu-link" href="prompt_dis.html">提示词调试 <span class="arrow">▶</span></a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">基础信息 / 模型</div>
+        <h1>添加模型</h1>
+      </div>
+      <div class="actions">
+        <a class="btn btn-reset" href="mode_list.html">返回列表</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="form-wrap">
+        <form class="form-grid" id="addForm" novalidate>
+          <div class="form-row">
+            <label class="form-label" for="server">服务器 *</label>
+            <select class="form-input" id="server" name="server" required>
+              <option value="" disabled selected>请选择服务器</option>
+              <option>硅基流动</option>
+              <option>OpenRouter</option>
+              <option>魔搭社区</option>
+              <option>OpenAI</option>
+              <option>Anthropic</option>
+              <option>阿里云通义</option>
+              <option>百度文心</option>
+              <option>腾讯混元</option>
+              <option>字节豆包</option>
+              <option>智谱 GLM</option>
+              <option>DeepSeek</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="modelName">模型名 *</label>
+            <input class="form-input" id="modelName" name="modelName" placeholder="如 gpt-4o" required />
+          </div>
+
+          <div class="form-row">
+            <label class="form-label" for="inCost">输入 token 计费 *</label>
+            <input class="form-input" id="inCost" name="inCost" inputmode="decimal" placeholder="如 2.5" />
+            <div class="note">仅可输入数字与小数点</div>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="outCost">输出 token 计费 *</label>
+            <input class="form-input" id="outCost" name="outCost" inputmode="decimal" placeholder="如 10" />
+            <div class="note">仅可输入数字与小数点</div>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label" for="unit">单位 *</label>
+            <select class="form-input" id="unit" name="unit">
+              <option>K</option>
+              <option>万</option>
+              <option>十万</option>
+              <option>百万</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label">类型（可多选）</label>
+            <div class="multiselect" id="typeMs">
+              <div class="ms-control" tabindex="0">
+                <span class="ms-placeholder">请选择类型</span>
+                <span class="ms-caret">▼</span>
+              </div>
+              <div class="ms-panel">
+                <label class="ms-opt"><input type="checkbox" value="对话" /><span>对话</span></label>
+                <label class="ms-opt"><input type="checkbox" value="视频" /><span>视频</span></label>
+                <label class="ms-opt"><input type="checkbox" value="嵌入" /><span>嵌入</span></label>
+                <label class="ms-opt"><input type="checkbox" value="生图" /><span>生图</span></label>
+                <label class="ms-opt"><input type="checkbox" value="语音" /><span>语音</span></label>
+                <label class="ms-opt"><input type="checkbox" value="重排" /><span>重排</span></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row full">
+            <label class="form-label" for="url">网址</label>
+            <input class="form-input" id="url" name="url" placeholder="https://" />
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">保存</button>
+            <a class="btn btn-reset" href="mode_list.html">取消</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+<script src="app.js"></script>
+<script>
+  // 类型多选下拉
+  (function () {
+    var ms = document.getElementById('typeMs');
+    var control = ms.querySelector('.ms-control');
+    var placeholder = ms.querySelector('.ms-placeholder');
+    var opts = Array.prototype.slice.call(ms.querySelectorAll('.ms-opt input'));
+
+    function render() {
+      Array.prototype.slice.call(ms.querySelectorAll('.ms-tag')).forEach(function (t) { t.remove(); });
+      var sel = opts.filter(function (o) { return o.checked; }).map(function (o) { return o.value; });
+      if (sel.length === 0) { placeholder.style.display = ''; return; }
+      placeholder.style.display = 'none';
+      sel.forEach(function (v) {
+        var tag = document.createElement('span');
+        tag.className = 'ms-tag';
+        tag.innerHTML = '<span>' + v + '</span><span class="x" data-v="' + v + '">×</span>';
+        control.insertBefore(tag, placeholder);
+      });
+    }
+    control.addEventListener('click', function (e) {
+      if (e.target.classList.contains('x')) {
+        var o = opts.find(function (x) { return x.value === e.target.dataset.v; });
+        if (o) o.checked = false;
+        render();
+        e.stopPropagation();
+        return;
+      }
+      ms.classList.toggle('open');
+    });
+    opts.forEach(function (o) { o.addEventListener('change', render); });
+    document.addEventListener('click', function (e) { if (!ms.contains(e.target)) ms.classList.remove('open'); });
+  })();
+
+  // 输入/输出 token 计费：仅允许数字与小数点（且只能有一个小数点）
+  ['inCost', 'outCost'].forEach(function (id) {
+    var el = document.getElementById(id);
+    el.addEventListener('input', function () {
+      var v = el.value.replace(/[^\d.]/g, '');
+      var dot = v.indexOf('.');
+      if (dot !== -1) v = v.slice(0, dot + 1) + v.slice(dot + 1).replace(/\./g, '');
+      el.value = v;
+    });
+  });
+
+  // 保存 / 取消
+  document.getElementById('addForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var server = document.getElementById('server').value;
+    var name = document.getElementById('modelName').value.trim();
+    var inCost = document.getElementById('inCost').value.trim();
+    var outCost = document.getElementById('outCost').value.trim();
+    if (!server) { alert('请选择服务器'); return; }
+    if (!name) { alert('请输入模型名'); return; }
+    if (!inCost) { alert('请输入输入 token 计费'); return; }
+    if (!outCost) { alert('请输入输出 token 计费'); return; }
+    var types = Array.prototype.slice.call(document.querySelectorAll('#typeMs .ms-opt input'))
+      .filter(function (o) { return o.checked; }).map(function (o) { return o.value; }).join('、');
+    alert('保存成功！\n\n模型：' + name + '\n服务器：' + server + '\n单位：' + document.getElementById('unit').value +
+      (types ? '\n类型：' + types : ''));
+    window.location.href = 'mode_list.html';
+  });
+</script>
+</body>
+</html>

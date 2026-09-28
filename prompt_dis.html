@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>提示词调试 - Test_Prompt</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">T</div>
+      <div class="name">Test_Prompt</div>
+    </div>
+    <nav class="menu">
+      <div class="menu-item menu-l1 open">
+        <div class="menu-link">基础信息 <span class="arrow">▶</span></div>
+        <div class="menu-item menu-l2 open">
+          <div class="menu-link">模型服务器</div>
+          <div class="menu-l3">
+            <a href="list_server.html">服务器列表</a>
+            <a href="server.html">添加服务器</a>
+          </div>
+        </div>
+        <div class="menu-item menu-l2 open">
+          <div class="menu-link">模型</div>
+          <div class="menu-l3">
+            <a href="mode_list.html">模型列表</a>
+            <a href="model_add.html">添加模型</a>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item menu-l1">
+        <a class="menu-link active" href="prompt_dis.html">提示词调试 <span class="arrow">▶</span></a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">基础信息 / 提示词调试</div>
+        <h1>提示词调试</h1>
+      </div>
+      <div class="actions">
+        <button class="btn btn-reset" id="resetBtn">重置</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="workbench">
+        <!-- 左：配置与输入 -->
+        <div class="wb-input">
+          <div class="section-title">基础配置</div>
+          <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:18px 20px">
+            <div class="form-row">
+              <label class="form-label" for="serverSel">服务器 *</label>
+              <select class="form-input" id="serverSel"></select>
+            </div>
+            <div class="form-row">
+              <label class="form-label">Base_url</label>
+              <input class="form-input" id="baseUrl" readonly placeholder="选择服务器后自动带出" />
+            </div>
+            <div class="form-row">
+              <label class="form-label" for="apiKey">api_key *</label>
+              <input class="form-input" id="apiKey" type="password" placeholder="输入 API Key" />
+            </div>
+            <div class="form-row">
+              <label class="form-label" for="modelSel">模型 *</label>
+              <select class="form-input" id="modelSel"></select>
+            </div>
+          </div>
+          <div class="cost-tags" id="costTags">
+            <span class="cost-tag empty">输入 token 费用：—</span>
+            <span class="cost-tag empty">输出 token 费用：—</span>
+          </div>
+
+          <div class="section-title">提示词</div>
+          <div class="form-row" style="margin-bottom:14px">
+            <div class="label-row" style="margin-bottom:7px">
+              <label class="form-label" for="sysPrompt">系统提示词 *</label>
+              <button type="button" class="btn-copy" data-copy="sysPrompt">复制</button>
+            </div>
+            <textarea class="prompt-box" id="sysPrompt" style="min-height:150px" placeholder="设定模型的角色与行为约束……"></textarea>
+          </div>
+          <div class="form-row" style="margin-bottom:14px">
+            <div class="label-row" style="margin-bottom:7px">
+              <label class="form-label" for="userPrompt">用户提示词（第 1 轮） *</label>
+              <button type="button" class="btn-copy" data-copy="userPrompt">复制</button>
+            </div>
+            <textarea class="form-input" id="userPrompt" rows="3" placeholder="输入用户的提问……"></textarea>
+          </div>
+
+          <div class="form-row" style="margin-bottom:14px">
+            <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="mtCheck" /> 多轮会话
+            </label>
+            <div class="multi-turn" id="mtBox" style="display:none">
+              <div id="mtList"></div>
+              <div class="turn-actions">
+                <button type="button" class="btn-add-turn" id="mtAdd">+ 添加下一轮</button>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-primary" id="debugBtn" style="margin-top:8px">调试</button>
+        </div>
+
+        <!-- 右：输出与费用 -->
+        <div class="wb-output">
+          <div>
+            <div class="label-row" style="margin-bottom:10px">
+              <div class="section-title" style="margin:0">模型输出</div>
+              <button type="button" class="btn-copy" data-copy="outBox">复制</button>
+            </div>
+            <textarea class="debug-output" id="outBox" readonly placeholder="点击「调试」后展示模型返回结果……"></textarea>
+          </div>
+          <div>
+            <div class="section-title">费用估算</div>
+            <div class="metric-row">
+              <div class="metric-card">
+                <div class="mc-label">输入 token 费</div>
+                <div class="mc-value" id="inCard">¥0.0000</div>
+                <div class="mc-sub" id="inSub">— tokens</div>
+              </div>
+              <div class="metric-card">
+                <div class="mc-label">输出 token 费</div>
+                <div class="mc-value" id="outCard">¥0.0000</div>
+                <div class="mc-sub" id="outSub">— tokens</div>
+              </div>
+              <div class="metric-card accent">
+                <div class="mc-label">总费</div>
+                <div class="mc-value" id="totalCard">¥0.0000</div>
+                <div class="mc-sub" id="totalSub">— tokens</div>
+              </div>
+            </div>
+            <div class="sim-note">（原型模拟：按输入/输出字符数估算 token，未发起真实 API 请求）</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+<script src="app.js"></script>
+<script>
+  // 数据：取自基础信息（与 list_server.html / mode_list.html 一致）
+  const servers = {
+    "OpenAI": "https://api.openai.com/v1",
+    "Anthropic": "https://api.anthropic.com",
+    "阿里云通义": "https://dashscope.aliyuncs.com",
+    "百度文心": "https://qianfan.baidubce.com",
+    "腾讯混元": "https://hunyuan.tencentcloudapi.com",
+    "字节豆包": "https://ark.cn-beijing.volces.com",
+    "智谱 GLM": "https://open.bigmodel.cn",
+    "DeepSeek": "https://api.deepseek.com"
+  };
+  const models = {
+    "gpt-4o": { platform: "OpenAI", in: 5, out: 15 },
+    "claude-3.5-sonnet": { platform: "Anthropic", in: 3, out: 15 },
+    "qwen-max": { platform: "阿里云通义", in: 1.2, out: 1.2 },
+    "ernie-4.0": { platform: "百度文心", in: 8, out: 8 },
+    "hunyuan-pro": { platform: "腾讯混元", in: 6, out: 6 },
+    "doubao-pro": { platform: "字节豆包", in: 0.8, out: 2 },
+    "glm-4": { platform: "智谱 GLM", in: 1, out: 1 },
+    "deepseek-v3": { platform: "DeepSeek", in: 0.5, out: 1.1 }
+  };
+
+  const serverSel = document.getElementById('serverSel');
+  const baseUrl = document.getElementById('baseUrl');
+  const modelSel = document.getElementById('modelSel');
+  const costTags = document.getElementById('costTags');
+
+  // 填充下拉
+  Object.keys(servers).forEach(function (k) {
+    var o = document.createElement('option'); o.value = k; o.textContent = k; serverSel.appendChild(o);
+  });
+  Object.keys(models).forEach(function (k) {
+    var o = document.createElement('option'); o.value = k; o.textContent = k + '（' + models[k].platform + '）'; modelSel.appendChild(o);
+  });
+
+  // 服务器选择 -> Base_url 跟随
+  serverSel.addEventListener('change', function () {
+    baseUrl.value = servers[serverSel.value] || '';
+  });
+
+  // 模型选择 -> 费用标签
+  modelSel.addEventListener('change', function () {
+    var m = models[modelSel.value];
+    if (!m) {
+      costTags.innerHTML = '<span class="cost-tag empty">输入 token 费用：—</span><span class="cost-tag empty">输出 token 费用：—</span>';
+      return;
+    }
+    costTags.innerHTML =
+      '<span class="cost-tag">输入 token 费用：¥' + m.in + ' /百万</span>' +
+      '<span class="cost-tag">输出 token 费用：¥' + m.out + ' /百万</span>';
+  });
+
+  // 多轮会话
+  const mtCheck = document.getElementById('mtCheck');
+  const mtBox = document.getElementById('mtBox');
+  const mtList = document.getElementById('mtList');
+  const mtAdd = document.getElementById('mtAdd');
+  let round = 2;
+  function renderTurn(n) {
+    const row = document.createElement('div');
+    row.className = 'turn-row';
+    row.innerHTML =
+      '<div class="turn-head"><label>第 ' + n + ' 轮 · 用户提示词</label>' +
+      '<div class="turn-head-actions">' +
+      '<button type="button" class="btn-copy">复制</button>' +
+      '<button type="button" class="btn-del-turn">删除</button></div></div>' +
+      '<textarea class="form-input" rows="2" placeholder="输入第 ' + n + ' 轮用户提示词"></textarea>';
+    row.querySelector('.btn-del-turn').addEventListener('click', function () {
+      row.remove();
+      renumberTurns();
+    });
+    row.querySelector('.btn-copy').addEventListener('click', function () {
+      copyText(row.querySelector('textarea').value, this);
+    });
+    return row;
+  }
+  // 删除后重新编号（第1轮是主区用户提示词，多轮从第2轮起）；删空自动收起
+  function renumberTurns() {
+    const rows = mtList.querySelectorAll('.turn-row');
+    rows.forEach(function (r, i) {
+      const n = i + 2;
+      r.querySelector('label').textContent = '第 ' + n + ' 轮 · 用户提示词';
+      r.querySelector('textarea').placeholder = '输入第 ' + n + ' 轮用户提示词';
+    });
+    round = rows.length + 2;
+    if (rows.length === 0) {
+      mtCheck.checked = false;
+      mtBox.style.display = 'none';
+    }
+  }
+  mtCheck.addEventListener('change', function () {
+    if (mtCheck.checked) {
+      mtBox.style.display = 'block';
+      mtList.innerHTML = '';
+      mtList.appendChild(renderTurn(2));
+      round = 3;
+    } else {
+      mtBox.style.display = 'none';
+      mtList.innerHTML = '';
+    }
+  });
+  mtAdd.addEventListener('click', function () {
+    mtList.appendChild(renderTurn(round));
+    round++;
+  });
+
+  // 复制按钮（系统提示词 / 用户提示词 / 模型输出 / 多轮每一轮）
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    ta.remove();
+  }
+  function copyText(text, btn) {
+    if (!text) { alert('暂无内容可复制'); return; }
+    const done = function () {
+      const old = btn.textContent;
+      btn.textContent = '已复制';
+      btn.classList.add('done');
+      setTimeout(function () { btn.textContent = old; btn.classList.remove('done'); }, 1200);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(function () { fallbackCopy(text); done(); });
+    } else { fallbackCopy(text); done(); }
+  }
+  document.querySelectorAll('.btn-copy').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const el = document.getElementById(btn.dataset.copy);
+      copyText(el ? el.value : '', btn);
+    });
+  });
+
+  // 调试（模拟计算）
+  function fmt(v) { return '¥' + v.toFixed(4); }
+  document.getElementById('debugBtn').addEventListener('click', function () {
+    const server = serverSel.value;
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const model = modelSel.value;
+    const sys = document.getElementById('sysPrompt').value;
+    const user1 = document.getElementById('userPrompt').value;
+    if (!server) { alert('请选择服务器'); return; }
+    if (!apiKey) { alert('请输入 api_key'); return; }
+    if (!model) { alert('请选择模型'); return; }
+    if (!sys.trim()) { alert('请输入系统提示词'); return; }
+    if (!user1.trim()) { alert('请输入第 1 轮用户提示词'); return; }
+    const turns = [user1].concat(
+      Array.prototype.slice.call(mtList.querySelectorAll('textarea')).map(function (t) { return t.value; })
+    );
+    const allText = [sys].concat(turns).join('\n');
+    const inTokens = Math.max(1, Math.ceil(allText.length / 2));
+
+    const reply = simulateReply(model, (user1 || turns[1] || '示例问题').slice(0, 40));
+    const outTokens = Math.max(1, Math.ceil(reply.length / 2));
+
+    const m = models[model];
+    const costIn = inTokens / 1e6 * m.in;
+    const costOut = outTokens / 1e6 * m.out;
+    const total = costIn + costOut;
+
+    document.getElementById('outBox').value = reply;
+    document.getElementById('inCard').textContent = fmt(costIn);
+    document.getElementById('inSub').textContent = inTokens + ' tokens';
+    document.getElementById('outCard').textContent = fmt(costOut);
+    document.getElementById('outSub').textContent = outTokens + ' tokens';
+    document.getElementById('totalCard').textContent = fmt(total);
+    document.getElementById('totalSub').textContent = (inTokens + outTokens) + ' tokens';
+  });
+
+  function simulateReply(model, prompt) {
+    return '【' + model + ' 模拟回复】\n\n' +
+      '针对您的问题「' + prompt + '……」，这是一个原型模拟输出，用于演示调试流程与费用估算。\n\n' +
+      '在实际应用中，此处会返回模型基于「系统提示词 + 多轮对话上下文」生成的真实回复内容。' +
+      '当前为离线模拟，未发起任何 API 请求。';
+  }
+
+  // 重置
+  document.getElementById('resetBtn').addEventListener('click', function () {
+    serverSel.value = '';
+    baseUrl.value = '';
+    document.getElementById('apiKey').value = '';
+    modelSel.value = '';
+    costTags.innerHTML = '<span class="cost-tag empty">输入 token 费用：—</span><span class="cost-tag empty">输出 token 费用：—</span>';
+    document.getElementById('sysPrompt').value = '';
+    document.getElementById('userPrompt').value = '';
+    mtCheck.checked = false; mtBox.style.display = 'none'; mtList.innerHTML = '';
+    document.getElementById('outBox').value = '';
+    document.getElementById('inCard').textContent = '¥0.0000';
+    document.getElementById('inSub').textContent = '— tokens';
+    document.getElementById('outCard').textContent = '¥0.0000';
+    document.getElementById('outSub').textContent = '— tokens';
+    document.getElementById('totalCard').textContent = '¥0.0000';
+    document.getElementById('totalSub').textContent = '— tokens';
+  });
+</script>
+</body>
+</html>

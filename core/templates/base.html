@@ -1,0 +1,45 @@
+{% load static %}<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Test_Prompt{% endblock %}</title>
+<link rel="stylesheet" href="{% static 'core/styles.css' %}">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="logo"><span class="logo-mark">T</span> Test_Prompt</div>
+    <nav class="menu">
+      <div class="menu-l1">
+        <div class="menu-l1-title">基础信息</div>
+        <div class="menu-l2">
+          <div class="menu-l2-title">模型服务器</div>
+          <div class="menu-l3">
+            <a href="{% url 'server_list' %}" class="{% if request.path == '/servers/' %}active{% endif %}">服务器列表</a>
+            <a href="{% url 'server_add' %}" class="{% if request.path == '/servers/add/' %}active{% endif %}">添加服务器</a>
+          </div>
+        </div>
+        <div class="menu-l2">
+          <div class="menu-l2-title">模型</div>
+          <div class="menu-l3">
+            <a href="{% url 'model_list' %}" class="{% if request.path == '/models/' %}active{% endif %}">模型列表</a>
+            <a href="{% url 'model_add' %}" class="{% if request.path == '/models/add/' %}active{% endif %}">添加模型</a>
+          </div>
+        </div>
+      </div>
+      <a class="menu-l1-link {% if request.path == '/debug/' %}active{% endif %}" href="{% url 'debug' %}">提示词调试</a>
+    </nav>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <div class="crumbs">{% block crumb %}基础信息 / 模型服务器 / 服务器列表{% endblock %}</div>
+    </header>
+    <div class="content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

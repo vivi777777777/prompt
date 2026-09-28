@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block crumb %}基础信息 / 模型 / 添加模型{% endblock %}
+{% block content %}
+<div class="card">
+  <a class="back-link" href="{% url 'model_list' %}">← 返回列表</a>
+  <div class="eyebrow">基础信息 / 模型</div>
+  <h1>添加模型</h1>
+  <form method="post" class="form-grid">
+    {% csrf_token %}
+    <div class="form-row">
+      <label class="form-label">服务器 *</label>
+      <select class="form-input" name="svc_id">
+        <option value="">-- 请选择 --</option>
+        {% for s in servers %}<option value="{{ s.id }}" {% if s.id|stringformat:'s' == svc_id %}selected{% endif %}>{{ s.plat_name }}</option>{% endfor %}
+      </select>
+      {% if errs.svc_id %}<div class="form-err">{{ errs.svc_id }}</div>{% endif %}
+    </div>
+    <div class="form-row">
+      <label class="form-label">模型名 *</label>
+      <input class="form-input" type="text" name="model_name" value="{{ model_name }}">
+      {% if errs.model_name %}<div class="form-err">{{ errs.model_name }}</div>{% endif %}
+    </div>
+    <div class="form-row">
+      <label class="form-label">输入 token 计费</label>
+      <input class="form-input num" type="text" name="in_token_fee" value="{{ in_token_fee }}" oninput="this.value=this.value.replace(/[^\d.]/g,'').replace(/(\..*)\./g,'$1')">
+    </div>
+    <div class="form-row">
+      <label class="form-label">输出 token 计费</label>
+      <input class="form-input num" type="text" name="out_token_fee" value="{{ out_token_fee }}" oninput="this.value=this.value.replace(/[^\d.]/g,'').replace(/(\..*)\./g,'$1')">
+    </div>
+    <div class="form-row">
+      <label class="form-label">单位</label>
+      <select class="form-input" name="unit">
+        <option value="K" {% if unit == 'K' %}selected{% endif %}>K</option>
+        <option value="万" {% if unit == '万' %}selected{% endif %}>万</option>
+        <option value="十万" {% if unit == '十万' %}selected{% endif %}>十万</option>
+        <option value="百万" {% if unit == '百万' %}selected{% endif %}>百万</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">类型（可多选）</label>
+      <div class="chk-group">
+        <label class="chk"><input type="checkbox" name="type" value="对话" {% if '对话' in type %}checked{% endif %}>对话</label>
+        <label class="chk"><input type="checkbox" name="type" value="视频" {% if '视频' in type %}checked{% endif %}>视频</label>
+        <label class="chk"><input type="checkbox" name="type" value="嵌入" {% if '嵌入' in type %}checked{% endif %}>嵌入</label>
+        <label class="chk"><input type="checkbox" name="type" value="生图" {% if '生图' in type %}checked{% endif %}>生图</label>
+        <label class="chk"><input type="checkbox" name="type" value="语音" {% if '语音' in type %}checked{% endif %}>语音</label>
+        <label class="chk"><input type="checkbox" name="type" value="重排" {% if '重排' in type %}checked{% endif %}>重排</label>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">网址</label>
+      <input class="form-input" type="text" name="url" value="{{ url }}">
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">保存</button>
+      <a class="btn btn-reset" href="{% url 'model_list' %}">取消</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>添加服务器 - Test_Prompt</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">T</div>
+      <div class="name">Test_Prompt</div>
+    </div>
+    <nav class="menu">
+      <div class="menu-item menu-l1 open">
+        <div class="menu-link">基础信息 <span class="arrow">▶</span></div>
+        <div class="menu-item menu-l2 open">
+          <div class="menu-link">模型服务器</div>
+          <div class="menu-l3">
+            <a href="list_server.html">服务器列表</a>
+            <a href="server.html" class="active">添加服务器</a>
+          </div>
+        </div>
+        <div class="menu-item menu-l2 open">
+          <div class="menu-link">模型</div>
+          <div class="menu-l3">
+            <a href="mode_list.html">模型列表</a>
+            <a href="model_add.html">添加模型</a>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item menu-l1">
+        <a class="menu-link" href="prompt_dis.html">提示词调试 <span class="arrow">▶</span></a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">基础信息 / 模型服务器</div>
+        <h1>添加服务器</h1>
+      </div>
+      <div class="actions">
+        <a class="btn btn-reset" href="list_server.html">返回列表</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="form-wrap">
+        <form class="form-grid" id="addForm">
+          <div class="form-row">
+            <label class="form-label" for="platform">平台 / 官方名 *</label>
+            <input class="form-input" id="platform" name="platform" list="platformList"
+                   placeholder="请选择或输入平台 / 官方名" required />
+            <datalist id="platformList">
+              <option value="硅基流动"></option>
+              <option value="OpenRouter"></option>
+              <option value="魔搭社区"></option>
+              <option value="OpenAI"></option>
+            </datalist>
+            <div class="note">可编辑下拉：从预设中选择，也可直接输入自定义平台名。</div>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label" for="baseUrl">api 网址 (base_url) *</label>
+            <input class="form-input" id="baseUrl" name="baseUrl" placeholder="https://..." required />
+          </div>
+
+          <div class="form-row">
+            <label class="form-label" for="company">公司名 *</label>
+            <input class="form-input" id="company" name="company" placeholder="如 硅基流动" required />
+          </div>
+
+          <div class="form-row">
+            <label class="form-label" for="home">首页</label>
+            <input class="form-input" id="home" name="home" placeholder="https://..." />
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">保存</button>
+            <a class="btn btn-reset" href="list_server.html">取消</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+<script src="app.js"></script>
+<script>
+  document.getElementById("addForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const p = document.getElementById("platform").value.trim();
+    alert("（原型）已保存服务器：\n" + p + "\n\n实际接入时可写入后端，并跳转回列表页。");
+    window.location.href = "list_server.html";
+  });
+</script>
+</body>
+</html>

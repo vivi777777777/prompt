@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>模型列表 - Test_Prompt</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">T</div>
+      <div class="name">Test_Prompt</div>
+    </div>
+    <nav class="menu">
+      <div class="menu-item menu-l1 open">
+        <div class="menu-link">基础信息 <span class="arrow">▶</span></div>
+        <div class="menu-item menu-l2 open">
+          <div class="menu-link">模型服务器</div>
+          <div class="menu-l3">
+            <a href="list_server.html">服务器列表</a>
+            <a href="server.html">添加服务器</a>
+          </div>
+        </div>
+        <div class="menu-item menu-l2 open">
+          <div class="menu-link">模型</div>
+          <div class="menu-l3">
+            <a href="mode_list.html" class="active">模型列表</a>
+            <a href="model_add.html">添加模型</a>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item menu-l1">
+        <a class="menu-link" href="prompt_dis.html">提示词调试 <span class="arrow">▶</span></a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">基础信息 / 模型</div>
+        <h1>模型列表</h1>
+      </div>
+      <div class="actions">
+        <button class="btn btn-del" id="delBtn" disabled>删除</button>
+        <a class="btn btn-add" href="model_add.html">+ 添加模型</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="search-bar">
+        <div class="field">
+          <label for="searchPlatform">平台 / 官方名</label>
+          <input id="searchPlatform" list="pfList" placeholder="选择或输入" />
+          <datalist id="pfList">
+            <option value="OpenAI"></option>
+            <option value="Anthropic"></option>
+            <option value="阿里云通义"></option>
+            <option value="百度文心"></option>
+            <option value="腾讯混元"></option>
+            <option value="字节豆包"></option>
+            <option value="智谱 GLM"></option>
+            <option value="DeepSeek"></option>
+          </datalist>
+        </div>
+        <div class="field">
+          <label for="searchType">类型</label>
+          <input id="searchType" list="typeList" placeholder="选择或输入" />
+          <datalist id="typeList">
+            <option value="对话"></option>
+            <option value="推理"></option>
+            <option value="嵌入"></option>
+            <option value="图像"></option>
+          </datalist>
+        </div>
+        <div class="field">
+          <label for="searchName">模型名</label>
+          <input id="searchName" placeholder="输入模型名" />
+        </div>
+        <div class="field">
+          <label>输入 token 费用（¥/百万）</label>
+          <div class="range">
+            <input id="inMin" placeholder="最小" />
+            <span>—</span>
+            <input id="inMax" placeholder="最大" />
+          </div>
+        </div>
+        <div class="field">
+          <label>输出 token 费用（¥/百万）</label>
+          <div class="range">
+            <input id="outMin" placeholder="最小" />
+            <span>—</span>
+            <input id="outMax" placeholder="最大" />
+          </div>
+        </div>
+        <div class="search-actions">
+          <button class="btn btn-search" id="searchBtn">搜索</button>
+          <button class="btn btn-reset" id="resetBtn">重置</button>
+        </div>
+      </div>
+
+      <div class="count-tip">共 <b id="totalCount">0</b> 个模型，已选 <b id="selCount">0</b> 个</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th class="col-check"><input type="checkbox" id="checkAll" /></th>
+            <th>平台 / 官方名</th>
+            <th>模型名</th>
+            <th>类型</th>
+            <th>输入 token 费用</th>
+            <th>输出 token 费用</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"><!-- JS 渲染 --></tbody>
+      </table>
+      <div class="empty" id="emptyTip">没有符合条件的模型</div>
+    </div>
+  </main>
+
+<script src="app.js"></script>
+<script>
+  const models = [
+    { platform: "OpenAI", name: "gpt-4o", type: "对话", in: 5, out: 15 },
+    { platform: "Anthropic", name: "claude-3.5-sonnet", type: "对话", in: 3, out: 15 },
+    { platform: "阿里云通义", name: "qwen-max", type: "对话", in: 1.2, out: 1.2 },
+    { platform: "百度文心", name: "ernie-4.0", type: "对话", in: 8, out: 8 },
+    { platform: "腾讯混元", name: "hunyuan-pro", type: "对话", in: 6, out: 6 },
+    { platform: "字节豆包", name: "doubao-pro", type: "对话", in: 0.8, out: 2 },
+    { platform: "智谱 GLM", name: "glm-4", type: "对话", in: 1, out: 1 },
+    { platform: "DeepSeek", name: "deepseek-v3", type: "推理", in: 0.5, out: 1.1 }
+  ];
+
+  const tbody = document.getElementById("tbody");
+  const checkAll = document.getElementById("checkAll");
+  const delBtn = document.getElementById("delBtn");
+  const totalCount = document.getElementById("totalCount");
+  const selCount = document.getElementById("selCount");
+  const emptyTip = document.getElementById("emptyTip");
+
+  let filtered = [...models];
+
+  function render() {
+    tbody.innerHTML = "";
+    filtered.forEach((m, i) => {
+      const tr = document.createElement("tr");
+      const href = "server_detail.html?name=" + encodeURIComponent(m.platform);
+      tr.innerHTML = `
+        <td class="col-check"><input type="checkbox" class="row-check" data-i="${i}" /></td>
+        <td><a class="link" href="${href}">${m.platform}</a></td>
+        <td><a class="link" href="${href}">${m.name}</a></td>
+        <td>${m.type}</td>
+        <td>¥${m.in} /百万</td>
+        <td>¥${m.out} /百万</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    totalCount.textContent = filtered.length;
+    emptyTip.style.display = filtered.length ? "none" : "block";
+    updateSelection();
+  }
+
+  function updateSelection() {
+    const checks = [...document.querySelectorAll(".row-check")];
+    const checked = checks.filter(c => c.checked);
+    selCount.textContent = checked.length;
+    delBtn.disabled = checked.length === 0;
+    checkAll.checked = checks.length > 0 && checked.length === checks.length;
+    checks.forEach(c => c.closest("tr").classList.toggle("selected", c.checked));
+  }
+
+  tbody.addEventListener("change", e => {
+    if (e.target.classList.contains("row-check")) updateSelection();
+  });
+  checkAll.addEventListener("change", () => {
+    document.querySelectorAll(".row-check").forEach(c => c.checked = checkAll.checked);
+    updateSelection();
+  });
+
+  function doSearch() {
+    const p = document.getElementById("searchPlatform").value.trim().toLowerCase();
+    const t = document.getElementById("searchType").value.trim().toLowerCase();
+    const n = document.getElementById("searchName").value.trim().toLowerCase();
+    const im = parseFloat(document.getElementById("inMin").value);
+    const ix = parseFloat(document.getElementById("inMax").value);
+    const om = parseFloat(document.getElementById("outMin").value);
+    const ox = parseFloat(document.getElementById("outMax").value);
+    filtered = models.filter(m => {
+      if (p && !m.platform.toLowerCase().includes(p)) return false;
+      if (t && !m.type.toLowerCase().includes(t)) return false;
+      if (n && !m.name.toLowerCase().includes(n)) return false;
+      if (!isNaN(im) && m.in < im) return false;
+      if (!isNaN(ix) && m.in > ix) return false;
+      if (!isNaN(om) && m.out < om) return false;
+      if (!isNaN(ox) && m.out > ox) return false;
+      return true;
+    });
+    checkAll.checked = false;
+    render();
+  }
+  document.getElementById("searchBtn").addEventListener("click", doSearch);
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    ["searchPlatform", "searchType", "searchName", "inMin", "inMax", "outMin", "outMax"]
+      .forEach(id => document.getElementById(id).value = "");
+    filtered = [...models];
+    checkAll.checked = false;
+    render();
+  });
+  ["searchPlatform", "searchType", "searchName"].forEach(id => {
+    document.getElementById(id).addEventListener("keydown", e => {
+      if (e.key === "Enter") doSearch();
+    });
+  });
+
+  delBtn.addEventListener("click", () => {
+    const n = document.querySelectorAll(".row-check:checked").length;
+    if (n === 0) return;
+    if (confirm(`确定要删除选中的 ${n} 个模型吗？此操作不可恢复。`)) {
+      const idx = [...document.querySelectorAll(".row-check:checked")].map(c => +c.dataset.i);
+      const toRemove = new Set(idx);
+      filtered = filtered.filter((_, i) => !toRemove.has(i));
+      const removeNames = [...document.querySelectorAll(".row-check:checked")].map(c => filtered[+c.dataset.i]?.name);
+      models.splice(0, models.length, ...models.filter(m => !removeNames.includes(m.name)));
+      checkAll.checked = false;
+      render();
+    }
+  });
+
+  render();
+</script>
+</body>
+</html>

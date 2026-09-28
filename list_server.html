@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>服务器列表 - Test_Prompt</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- 左侧菜单 -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">T</div>
+      <div class="name">Test_Prompt</div>
+    </div>
+    <nav class="menu">
+      <div class="menu-item menu-l1 open">
+        <div class="menu-link">基础信息 <span class="arrow">▶</span></div>
+        <div class="menu-item menu-l2 open">
+          <div class="menu-link">模型服务器</div>
+          <div class="menu-l3">
+            <a href="list_server.html" class="active">服务器列表</a>
+            <a href="server.html">添加服务器</a>
+          </div>
+        </div>
+        <div class="menu-item menu-l2 open">
+          <div class="menu-link">模型</div>
+          <div class="menu-l3">
+            <a href="mode_list.html">模型列表</a>
+            <a href="model_add.html">添加模型</a>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item menu-l1">
+        <a class="menu-link" href="prompt_dis.html">提示词调试 <span class="arrow">▶</span></a>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- 主区域 -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">基础信息 / 模型服务器</div>
+        <h1>服务器列表</h1>
+      </div>
+      <div class="actions">
+        <button class="btn btn-del" id="delBtn" disabled>删除</button>
+        <a class="btn btn-add" href="server.html">+ 添加服务器</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="search-bar">
+        <div class="field">
+          <label for="searchPlatform">平台 / 官方名</label>
+          <input type="text" id="searchPlatform" placeholder="输入平台或官方名" />
+        </div>
+        <div class="field">
+          <label for="searchCompany">公司名</label>
+          <input type="text" id="searchCompany" placeholder="输入公司名" />
+        </div>
+        <div class="search-actions">
+          <button class="btn btn-search" id="searchBtn">搜索</button>
+          <button class="btn btn-reset" id="resetBtn">重置</button>
+        </div>
+      </div>
+
+      <div class="count-tip">共 <b id="totalCount">0</b> 条服务器，已选 <b id="selCount">0</b> 条</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th class="col-check"><input type="checkbox" id="checkAll" /></th>
+            <th>平台 / 官方名</th>
+            <th>公司名</th>
+            <th>api 接口</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"><!-- JS 渲染 --></tbody>
+      </table>
+      <div class="empty" id="emptyTip">没有符合条件的服务器</div>
+    </div>
+  </main>
+
+<script src="app.js"></script>
+<script>
+  const servers = [
+    { platform: "OpenAI", company: "美国开放人工智能公司", api: "https://api.openai.com/v1" },
+    { platform: "Anthropic", company: "美国 Anthropic 公司", api: "https://api.anthropic.com" },
+    { platform: "阿里云通义", company: "阿里巴巴集团", api: "https://dashscope.aliyuncs.com" },
+    { platform: "百度文心", company: "百度在线网络技术", api: "https://qianfan.baidubce.com" },
+    { platform: "腾讯混元", company: "腾讯科技", api: "https://hunyuan.tencentcloudapi.com" },
+    { platform: "字节豆包", company: "北京字节跳动", api: "https://ark.cn-beijing.volces.com" },
+    { platform: "智谱 GLM", company: "北京智谱华章", api: "https://open.bigmodel.cn" },
+    { platform: "DeepSeek", company: "杭州深度求索", api: "https://api.deepseek.com" }
+  ];
+
+  const tbody = document.getElementById("tbody");
+  const checkAll = document.getElementById("checkAll");
+  const delBtn = document.getElementById("delBtn");
+  const totalCount = document.getElementById("totalCount");
+  const selCount = document.getElementById("selCount");
+  const emptyTip = document.getElementById("emptyTip");
+
+  let filtered = [...servers];
+
+  function render() {
+    tbody.innerHTML = "";
+    filtered.forEach((s, i) => {
+      const tr = document.createElement("tr");
+      const href = "server_detail.html?name=" + encodeURIComponent(s.platform);
+      tr.innerHTML = `
+        <td class="col-check"><input type="checkbox" class="row-check" data-i="${i}" /></td>
+        <td><a class="link" href="${href}">${s.platform}</a></td>
+        <td><a class="link" href="${href}">${s.company}</a></td>
+        <td class="api-cell">${s.api}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    totalCount.textContent = filtered.length;
+    emptyTip.style.display = filtered.length ? "none" : "block";
+    updateSelection();
+  }
+
+  function updateSelection() {
+    const checks = [...document.querySelectorAll(".row-check")];
+    const checked = checks.filter(c => c.checked);
+    selCount.textContent = checked.length;
+    delBtn.disabled = checked.length === 0;
+    checkAll.checked = checks.length > 0 && checked.length === checks.length;
+    checks.forEach(c => c.closest("tr").classList.toggle("selected", c.checked));
+  }
+
+  tbody.addEventListener("change", e => {
+    if (e.target.classList.contains("row-check")) updateSelection();
+  });
+  checkAll.addEventListener("change", () => {
+    document.querySelectorAll(".row-check").forEach(c => c.checked = checkAll.checked);
+    updateSelection();
+  });
+
+  function doSearch() {
+    const p = document.getElementById("searchPlatform").value.trim().toLowerCase();
+    const c = document.getElementById("searchCompany").value.trim().toLowerCase();
+    filtered = servers.filter(s =>
+      (!p || s.platform.toLowerCase().includes(p)) &&
+      (!c || s.company.toLowerCase().includes(c))
+    );
+    checkAll.checked = false;
+    render();
+  }
+  document.getElementById("searchBtn").addEventListener("click", doSearch);
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    document.getElementById("searchPlatform").value = "";
+    document.getElementById("searchCompany").value = "";
+    filtered = [...servers];
+    checkAll.checked = false;
+    render();
+  });
+  ["searchPlatform", "searchCompany"].forEach(id => {
+    document.getElementById(id).addEventListener("keydown", e => {
+      if (e.key === "Enter") doSearch();
+    });
+  });
+
+  delBtn.addEventListener("click", () => {
+    const n = document.querySelectorAll(".row-check:checked").length;
+    if (n === 0) return;
+    if (confirm(`确定要删除选中的 ${n} 个服务器吗？此操作不可恢复。`)) {
+      const idx = [...document.querySelectorAll(".row-check:checked")].map(c => +c.dataset.i);
+      const toRemove = new Set(idx);
+      filtered = filtered.filter((_, i) => !toRemove.has(i));
+      const removeNames = [...document.querySelectorAll(".row-check:checked")].map(c => filtered[+c.dataset.i]?.platform);
+      servers.splice(0, servers.length, ...servers.filter(s => !removeNames.includes(s.platform)));
+      checkAll.checked = false;
+      render();
+    }
+  });
+
+  render();
+</script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block crumb %}基础信息 / 模型 / 模型列表{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="eyebrow">基础信息 / 模型</div>
+  <div class="page-head">
+    <h1>模型列表</h1>
+    <div class="head-actions">
+      <a class="btn btn-add" href="{% url 'model_add' %}">+ 添加模型</a>
+    </div>
+  </div>
+
+  <form class="search-bar" method="get">
+    <input class="form-input" type="text" name="plat" placeholder="平台/官方名" value="{{ plat }}">
+    <input class="form-input" type="text" name="mtype" placeholder="类型" value="{{ mtype }}">
+    <input class="form-input" type="text" name="mname" placeholder="模型名" value="{{ mname }}">
+    <input class="form-input num" type="text" name="in_min" placeholder="输入费≥" value="{{ in_min }}">
+    <input class="form-input num" type="text" name="in_max" placeholder="输入费≤" value="{{ in_max }}">
+    <input class="form-input num" type="text" name="out_min" placeholder="输出费≥" value="{{ out_min }}">
+    <input class="form-input num" type="text" name="out_max" placeholder="输出费≤" value="{{ out_max }}">
+    <button class="btn btn-primary" type="submit">搜索</button>
+    <a class="btn btn-reset" href="{% url 'model_list' %}">重置</a>
+  </form>
+
+  <form method="post" id="listForm" onsubmit="return confirmDel()">
+    {% csrf_token %}
+    <div class="bulk-bar">
+      <button type="submit" class="btn btn-danger" id="delBtn" disabled>删除</button>
+    </div>
+    <table class="table">
+      <thead><tr>
+        <th class="col-check"><input type="checkbox" id="checkAll"></th>
+        <th>平台/官方名</th><th>模型名</th><th>类型</th><th>输入 token 费</th><th>输出 token 费</th>
+      </tr></thead>
+      <tbody>
+      {% for m in models %}
+        <tr>
+          <td><input type="checkbox" class="row-check" name="del_ids" value="{{ m.id }}"></td>
+          <td><a class="link-gold" href="{% url 'server_detail' m.svc.id %}">{{ m.svc.plat_name }}</a></td>
+          <td><a class="link-gold" href="{% url 'server_detail' m.svc.id %}">{{ m.model_name }}</a></td>
+          <td>{{ m.type }}</td>
+          <td>¥{{ m.in_token_fee }} /{{ m.unit }}</td>
+          <td>¥{{ m.out_token_fee }} /{{ m.unit }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="empty">暂无数据</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </form>
+</div>
+<script>
+  const checks = document.querySelectorAll('.row-check');
+  const delBtn = document.getElementById('delBtn');
+  const checkAll = document.getElementById('checkAll');
+  function sync(){const n = document.querySelectorAll('.row-check:checked').length; delBtn.disabled = n === 0; delBtn.textContent = n ? ('删除(' + n + ')') : '删除';}
+  checks.forEach(c => c.addEventListener('change', sync));
+  checkAll.addEventListener('change', () => { checks.forEach(c => c.checked = checkAll.checked); sync(); });
+  function confirmDel(){const n = document.querySelectorAll('.row-check:checked').length; if(!n) return false; return confirm('确定删除选中的 ' + n + ' 个模型？');}
+</script>
+{% endblock %}

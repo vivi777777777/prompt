@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block crumb %}基础信息 / 模型服务器 / 服务器详情{% endblock %}
+{% block content %}
+<div class="card">
+  <a class="back-link" href="{% url 'server_list' %}">← 返回列表</a>
+  <div class="eyebrow">基础信息 / 模型服务器</div>
+  <h1>{{ srv.plat_name }}</h1>
+  <div class="detail-grid">
+    <div><span class="d-label">平台/官方名</span><span class="d-value">{{ srv.plat_name }}</span></div>
+    <div><span class="d-label">公司名</span><span class="d-value">{{ srv.company }}</span></div>
+    <div><span class="d-label">api 网址</span><span class="d-value">{{ srv.base_url }}</span></div>
+    <div><span class="d-label">首页</span><span class="d-value">{{ srv.homepage }}</span></div>
+  </div>
+  <h2 class="sub-title">旗下模型（{{ models|length }}）</h2>
+  <table class="table">
+    <thead><tr><th>模型名</th><th>类型</th><th>输入 token 费</th><th>输出 token 费</th><th>单位</th></tr></thead>
+    <tbody>
+    {% for m in models %}
+      <tr>
+        <td>{{ m.model_name }}</td><td>{{ m.type }}</td>
+        <td>¥{{ m.in_token_fee }} /{{ m.unit }}</td>
+        <td>¥{{ m.out_token_fee }} /{{ m.unit }}</td><td>{{ m.unit }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="empty">该服务下暂无模型</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

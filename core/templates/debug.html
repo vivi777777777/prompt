@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% block crumb %}提示词调试{% endblock %}
+{% block content %}
+<div class="card">
+  <a class="back-link" href="{% url 'server_list' %}">← 返回</a>
+  <div class="eyebrow">提示词调试</div>
+  <h1>提示词调试</h1>
+
+  <style>
+    .debug-layout{display:grid;grid-template-columns:1.05fr 1fr;gap:24px;margin-top:18px}
+    @media(max-width:920px){.debug-layout{grid-template-columns:1fr}}
+    .debug-col{display:flex;flex-direction:column;gap:14px}
+    .section-title{font-size:13px;font-weight:700;color:var(--purple-800,#3d1170);letter-spacing:.04em;margin:6px 0 2px;text-transform:uppercase}
+    .debug-actions{display:flex;gap:12px;margin-top:6px}
+    .cost-tags{display:flex;gap:10px;margin-top:4px}
+    .req::after{content:" *";color:var(--danger,#c0392b)}
+  </style>
+
+  <div class="debug-layout">
+    <!-- 左：配置与输入 -->
+    <div class="debug-col">
+      <div class="section-title">配置</div>
+
+      <div class="form-row">
+        <label class="form-label">服务器</label>
+        <select class="form-input" id="serverSel">
+          <option value="">-- 请选择 --</option>
+          {% for s in servers %}<option value="{{ s.id }}" data-baseurl="{{ s.base_url }}">{{ s.plat_name }}</option>{% endfor %}
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label class="form-label">Base_url</label>
+        <input class="form-input" id="baseUrl" readonly placeholder="选择服务器后自动带出">
+      </div>
+
+      <div class="form-row">
+        <label class="form-label req">api_key</label>
+        <input class="form-input" id="apiKey" type="password" placeholder="请输入 api_key">
+      </div>
+
+      <div class="form-row">
+        <label class="form-label">模型</label>
+        <select class="form-input" id="modelSel">
+          <option value="">-- 请选择 --</option>
+          {% for m in models %}<option value="{{ m.id }}">{{ m.svc.plat_name }} / {{ m.model_name }}</option>{% endfor %}
+        </select>
+      </div>
+
+      <div class="cost-tags">
+        <span class="cost-tag empty" id="inFeeTag">输入 token 费用：—</span>
+        <span class="cost-tag empty" id="outFeeTag">输出 token 费用：—</span>
+      </div>
+
+      <div class="section-title">提示词</div>
+      <div class="form-row">
+        <div class="label-row"><label class="form-label req">系统提示词</label><button type="button" class="btn-copy" data-copy="sysPrompt">复制</button></div>
+        <textarea class="prompt-box" id="sysPrompt" style="min-height:150px" placeholder="设定模型的角色与行为约束……"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="label-row"><label class="form-label req">用户提示词（第 1 轮）</label><button type="button" class="btn-copy" data-copy="userPrompt">复制</button></div>
+        <textarea class="form-input" id="userPrompt" rows="3" placeholder="输入用户的提问……"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label class="chk"><input type="checkbox" id="multiTurn"> 多轮会话</label>
+      </div>
+      <div id="turns" style="display:none"></div>
+
+      <div class="debug-actions">
+        <button class="btn btn-primary" id="debugBtn" type="button">调试</button>
+        <button class="btn btn-reset" id="resetBtn" type="button">重置</button>
+      </div>
+    </div>
+
+    <!-- 右：输出与费用 -->
+    <div class="debug-col">
+      <div class="section-title label-row">模型输出<button type="button" class="btn-copy" data-copy="outBox">复制</button></div>
+      <textarea class="debug-output" id="outBox" readonly placeholder="点击「调试」后展示模型返回结果……"></textarea>
+
+      <div class="metric-row">
+        <div class="metric-card">
+          <div class="mc-label">输入 token 费</div>
+          <div class="mc-value" id="inCard">¥0.0000</div>
+          <div class="mc-sub" id="inSub">— tokens</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">输出 token 费</div>
+          <div class="mc-value" id="outCard">¥0.0000</div>
+          <div class="mc-sub" id="outSub">— tokens</div>
+        </div>
+        <div class="metric-card accent">
+          <div class="mc-label">总费</div>
+          <div class="mc-value" id="totalCard">¥0.0000</div>
+          <div class="mc-sub" id="totalSub">— tokens</div>
+        </div>
+      </div>
+      <div class="sim-note">* 原型模拟计算：token 数按「字符数 / 2」估算，费用 = token 数 ÷ 单位换算 × 模型费率；未发起真实 API 请求。</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const feeMap = {{ model_fees_json|safe }}.reduce((o, m) => (o[m.id] = m, o), {});
+  const serverSel = document.getElementById('serverSel');
+  const baseUrl = document.getElementById('baseUrl');
+  const apiKey = document.getElementById('apiKey');
+  const modelSel = document.getElementById('modelSel');
+  const inFeeTag = document.getElementById('inFeeTag');
+  const outFeeTag = document.getElementById('outFeeTag');
+  const sysEl = document.getElementById('sysPrompt');
+  const u1El = document.getElementById('userPrompt');
+  const turnsBox = document.getElementById('turns');
+  const multiTurn = document.getElementById('multiTurn');
+  const outBox = document.getElementById('outBox');
+
+  const FACTOR = {'K':1e3, '万':1e4, '十万':1e5, '百万':1e6};
+
+  function copyText(text, btn){
+    if(!text){ alert('暂无内容可复制'); return; }
+    const done = () => { const o = btn.textContent; btn.textContent = '已复制'; btn.classList.add('done'); setTimeout(() => { btn.textContent = o; btn.classList.remove('done'); }, 1200); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(() => { fallback(text); done(); });
+    } else { fallback(text); done(); }
+  }
+  function fallback(text){ const t = document.createElement('textarea'); t.value = text; t.style.position='fixed'; t.style.opacity='0'; document.body.appendChild(t); t.select(); try{document.execCommand('copy');}catch(e){} t.remove(); }
+
+  document.querySelectorAll('.btn-copy').forEach(b => b.addEventListener('click', () => {
+    const el = document.getElementById(b.dataset.copy); copyText(el ? el.value : '', b);
+  }));
+
+  // 服务器 -> base_url
+  serverSel.addEventListener('change', () => {
+    const opt = serverSel.options[serverSel.selectedIndex];
+    baseUrl.value = opt && opt.dataset.baseurl ? opt.dataset.baseurl : '';
+  });
+
+  // 模型 -> 费用标签
+  modelSel.addEventListener('change', () => {
+    const f = feeMap[modelSel.value];
+    if(f){
+      inFeeTag.textContent = '输入 token 费用：¥' + f.in_fee + ' /' + f.unit;
+      outFeeTag.textContent = '输出 token 费用：¥' + f.out_fee + ' /' + f.unit;
+      inFeeTag.classList.remove('empty'); outFeeTag.classList.remove('empty');
+    } else {
+      inFeeTag.textContent = '输入 token 费用：—'; outFeeTag.textContent = '输出 token 费用：—';
+      inFeeTag.classList.add('empty'); outFeeTag.classList.add('empty');
+    }
+  });
+
+  // 多轮会话
+  let round = 2;
+  function renderTurn(n){
+    const row = document.createElement('div');
+    row.className = 'turn-row';
+    row.innerHTML =
+      '<div class="turn-head"><label>第 ' + n + ' 轮 · 用户提示词</label>' +
+      '<div class="turn-head-actions">' +
+      '<button type="button" class="btn-copy">复制</button>' +
+      '<button type="button" class="btn-del-turn">删除</button></div></div>' +
+      '<textarea class="form-input" rows="2" placeholder="输入第 ' + n + ' 轮用户提示词"></textarea>';
+    const ta = row.querySelector('textarea');
+    const copyBtn = row.querySelector('.btn-copy');
+    const delBtn = row.querySelector('.btn-del-turn');
+    copyBtn.addEventListener('click', () => copyText(ta.value, copyBtn));
+    delBtn.addEventListener('click', () => { row.remove(); renumber(); });
+    return row;
+  }
+  function renumber(){
+    const rows = turnsBox.querySelectorAll('.turn-row');
+    rows.forEach((r, i) => {
+      r.querySelector('label').textContent = '第 ' + (i + 2) + ' 轮 · 用户提示词';
+    });
+    if(rows.length === 0){
+      multiTurn.checked = false;
+      turnsBox.style.display = 'none';
+      round = 2;
+    }
+  }
+  multiTurn.addEventListener('change', () => {
+    if(multiTurn.checked){
+      turnsBox.style.display = 'block';
+      if(turnsBox.children.length === 0){ turnsBox.appendChild(renderTurn(round)); }
+    } else {
+      turnsBox.style.display = 'none';
+      turnsBox.innerHTML = ''; round = 2;
+    }
+  });
+
+  // 调试（模拟计算）
+  function fmt(v){ return '¥' + v.toFixed(4); }
+  document.getElementById('debugBtn').addEventListener('click', () => {
+    const sId = serverSel.value, key = apiKey.value.trim(), mId = modelSel.value;
+    if(!sId){ alert('请选择服务器'); return; }
+    if(!key){ alert('请输入 api_key'); return; }
+    if(!mId){ alert('请选择模型'); return; }
+    const sys = sysEl.value, u1 = u1El.value;
+    if(!sys){ alert('请输入系统提示词'); return; }
+    if(!u1){ alert('请输入用户提示词（第 1 轮）'); return; }
+
+    const f = feeMap[mId];
+    const factor = FACTOR[f.unit] || 1e6;
+    const turns = [u1];
+    turnsBox.querySelectorAll('textarea').forEach(t => turns.push(t.value));
+    const inText = sys + '\n' + turns.join('\n');
+    const inTokens = Math.max(1, Math.ceil(inText.length / 2));
+    const outTokens = Math.max(1, Math.ceil((sys.length + 60) / 2));
+    const inCost = inTokens / factor * f.in_fee;
+    const outCost = outTokens / factor * f.out_fee;
+    const total = inCost + outCost;
+
+    outBox.value = '（模拟）已收到您的提示词，下面是针对第 1～' + turns.length + ' 轮的示例回复。\n' +
+      '本工具当前为原型模拟，未真实调用大模型 API。接入真实接口后，此处将展示模型实际返回内容。';
+    document.getElementById('inCard').textContent = fmt(inCost);
+    document.getElementById('outCard').textContent = fmt(outCost);
+    document.getElementById('totalCard').textContent = fmt(total);
+    document.getElementById('inSub').textContent = inTokens + ' tokens';
+    document.getElementById('outSub').textContent = outTokens + ' tokens';
+    document.getElementById('totalSub').textContent = (inTokens + outTokens) + ' tokens';
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    serverSel.value = ''; baseUrl.value = ''; apiKey.value = '';
+    modelSel.value = ''; inFeeTag.textContent = '输入 token 费用：—'; outFeeTag.textContent = '输出 token 费用：—';
+    inFeeTag.classList.add('empty'); outFeeTag.classList.add('empty');
+    sysEl.value = ''; u1El.value = ''; multiTurn.checked = false; turnsBox.style.display = 'none'; turnsBox.innerHTML = ''; round = 2;
+    outBox.value = '';
+    document.getElementById('inCard').textContent = '¥0.0000';
+    document.getElementById('outCard').textContent = '¥0.0000';
+    document.getElementById('totalCard').textContent = '¥0.0000';
+    document.getElementById('inSub').textContent = '— tokens';
+    document.getElementById('outSub').textContent = '— tokens';
+    document.getElementById('totalSub').textContent = '— tokens';
+  });
+</script>
+{% endblock %}

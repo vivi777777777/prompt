@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block crumb %}基础信息 / 模型服务器 / 添加服务器{% endblock %}
+{% block content %}
+<div class="card">
+  <a class="back-link" href="{% url 'server_list' %}">← 返回列表</a>
+  <div class="eyebrow">基础信息 / 模型服务器</div>
+  <h1>添加服务器</h1>
+  {% if err %}<div class="form-err">{{ err }}</div>{% endif %}
+  <form method="post" class="form-grid">
+    {% csrf_token %}
+    <div class="form-row">
+      <label class="form-label">平台/官方名 *</label>
+      <input class="form-input" list="platOptions" name="plat_name" value="{{ plat_name }}" placeholder="可输入或选择">
+      <datalist id="platOptions">
+        <option value="硅基流动"><option value="OpenRouter"><option value="魔搭社区"><option value="OpenAI">
+        <option value="阿里云百炼"><option value="智谱AI"><option value="月之暗面"><option value="深度求索">
+      </datalist>
+    </div>
+    <div class="form-row">
+      <label class="form-label">api 网址 (base_url)</label>
+      <input class="form-input" type="text" name="base_url" value="{{ base_url }}">
+    </div>
+    <div class="form-row">
+      <label class="form-label">公司名</label>
+      <input class="form-input" type="text" name="company" value="{{ company }}">
+    </div>
+    <div class="form-row">
+      <label class="form-label">首页</label>
+      <input class="form-input" type="text" name="homepage" value="{{ homepage }}">
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">保存</button>
+      <a class="btn btn-reset" href="{% url 'server_list' %}">取消</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

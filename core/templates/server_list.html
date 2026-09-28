@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block crumb %}基础信息 / 模型服务器 / 服务器列表{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="eyebrow">基础信息 / 模型服务器</div>
+  <div class="page-head">
+    <h1>服务器列表</h1>
+    <div class="head-actions">
+      <a class="btn btn-add" href="{% url 'server_add' %}">+ 添加服务器</a>
+    </div>
+  </div>
+
+  <form class="search-bar" method="get">
+    <input class="form-input" type="text" name="plat" placeholder="平台/官方名" value="{{ plat }}">
+    <input class="form-input" type="text" name="company" placeholder="公司名" value="{{ company }}">
+    <button class="btn btn-primary" type="submit">搜索</button>
+    <a class="btn btn-reset" href="{% url 'server_list' %}">重置</a>
+  </form>
+
+  <form method="post" id="listForm" onsubmit="return confirmDel()">
+    {% csrf_token %}
+    <div class="bulk-bar">
+      <button type="submit" class="btn btn-danger" id="delBtn" disabled>删除</button>
+    </div>
+    <table class="table">
+      <thead><tr>
+        <th class="col-check"><input type="checkbox" id="checkAll"></th>
+        <th>平台/官方名</th><th>公司名</th><th>api 接口</th>
+      </tr></thead>
+      <tbody>
+      {% for s in servers %}
+        <tr>
+          <td><input type="checkbox" class="row-check" name="del_ids" value="{{ s.id }}"></td>
+          <td><a class="link-gold" href="{% url 'server_detail' s.id %}">{{ s.plat_name }}</a></td>
+          <td><a class="link-gold" href="{% url 'server_detail' s.id %}">{{ s.company }}</a></td>
+          <td>{{ s.base_url }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="empty">暂无数据</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </form>
+</div>
+<script>
+  const checks = document.querySelectorAll('.row-check');
+  const delBtn = document.getElementById('delBtn');
+  const checkAll = document.getElementById('checkAll');
+  function sync(){const n = document.querySelectorAll('.row-check:checked').length; delBtn.disabled = n === 0; delBtn.textContent = n ? ('删除(' + n + ')') : '删除';}
+  checks.forEach(c => c.addEventListener('change', sync));
+  checkAll.addEventListener('change', () => { checks.forEach(c => c.checked = checkAll.checked); sync(); });
+  function confirmDel(){const n = document.querySelectorAll('.row-check:checked').length; if(!n) return false; return confirm('确定删除选中的 ' + n + ' 个服务器？其下模型将一并删除。');}
+</script>
+{% endblock %}
